@@ -1,7 +1,5 @@
 'use strict';
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
 var request = require('request');
 var fs = require('fs');
 
@@ -10,42 +8,50 @@ var themCount = process.argv[3];
 
 var mainlink = "https://www.reddit.com";
 var category = [];
-var theme = {};
+var post = {};
+var fileNme = '';
+var u = 0;
+
+var html = function html(category, title, url) {
+  var title = category;
+  var css = '\t\t<link rel="stylesheet" href="../styles.css">\n';
+  var body = '<ul>\n';
+  for (var i = 0; i < themCount; i++) {
+    body += '\t\t\t<li><a href="' + url + '">' + title + '</a></li>\n';
+  }
+  body += '\t\t</ul>';
+
+  return '<!DOCTYPE html>\n' + '<html>\n\t<head>\n\t\t<title>' + title + '</title>\n' + css + '\t</head>\n\t<body>\n\t\t' + body + '\n\t</body>\n</html>';
+};
 
 request(mainlink + '/subreddits.json', function (error, response, body) {
   if (!error && response.statusCode == 200) {
-    for (var i = 0; i < catCount; i++) {
+    var _loop = function _loop(i) {
       category[i] = JSON.parse(body).data.children[i].data.url;
-      console.log(category[i]);
-      theme.url = [];
-      theme.title = [];
+
+      post.url = [];
+      post.title = [];
 
       request(mainlink + category[i] + '.json', function (error, response, body) {
         if (!error && response.statusCode == 200) {
           for (var j = 0; j < themCount; j++) {
-            theme.url[j] = JSON.parse(body).data.children[j].data.url;
-            theme.title[j] = JSON.parse(body).data.children[j].data.title;
-            console.log(_typeof(theme.url[j]));
-            console.log(_typeof(theme.title[j]));
+            post.url[j] = JSON.parse(body).data.children[j].data.url;
+            post.title[j] = JSON.parse(body).data.children[j].data.title;
+
+            fileName = category[i].split('/')[2];
+            fs.writeFile('reddit/' + fileName + '.html', html(fileName, post.title[j], post.url[j]), function (err) {
+              if (err) {
+                return console.log(err);
+              }
+              console.log("The file was saved!");
+            });
           }
         }
       });
+    };
+
+    for (var i = 0; i < catCount; i++) {
+      _loop(i);
     }
   }
-});
-
-var html = function html(category, title, url) {
-  var header = category;
-  var body = '';
-
-  // concatenate body string
-
-  return '<!DOCTYPE html>' + '<html><header>' + header + '</header><body>' + body + '</body></html>';
-};
-
-fs.writeFile(category + ".html", html, function (err) {
-  if (err) {
-    return console.log(err);
-  }
-  console.log("The file was saved!");
 });
